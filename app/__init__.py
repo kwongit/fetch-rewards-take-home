@@ -9,6 +9,7 @@ receipts = {}
 
 def calculate_points(receipt):
   """
+  Calculate points for the given receipt based on specific rules.
   """
   points = 0
 
@@ -32,13 +33,26 @@ def calculate_points(receipt):
   points += 5 * (len(items) // 2)
 
   # Rule 5: If the trimmed length of the item description is a multiple of 3, multiply the price by 0.2 and round up to the nearest integer. The result is the number of points earned.
-
+  for item in items:
+    item_description = item.get('shortDescription', '')
+    trimmed = len(item_description.strip()) % 3 == 0
+    if trimmed:
+      float_price = float(item.get('price', 0))
+      points += math.ceil(float_price * 0.2)
 
   # Rule 6: 6 points if the day in the purchase date is odd.
-
+  purchase_date = receipt.get('purchaseDate', '')
+  day = purchase_date.split('-')[2]
+  if int(day) % 2 != 0:
+    points += 6
 
   # Rule 7: 10 points if the time of purchase is after 2:00pm and before 4:00pm.
+  purchase_time = receipt.get('purchaseTime', '')
+  hour = purchase_time.split(':')[0]
+  if 14 <= int(hour) < 16:
+    points += 10
 
+  return points
 
 @app.route('/receipts/process', methods=['POST'])
 def process_receipts():
@@ -51,8 +65,11 @@ def process_receipts():
   # Generate a random UUID object and convert it to a string
   receipt_id = str(uuid.uuid4())
 
-  # Store the receipt data and initial points (0) in the receipts dictionary using the receipt_id as the key
-  receipts[receipt_id] = {'receipt_data': receipt, 'points': 0}
+  # Calculate points per receipt
+  points = calculate_points(receipt)
+
+  # Store the receipt data and calculated points in the receipts dictionary using the receipt_id as the key
+  receipts[receipt_id] = {'receipt_data': receipt, 'total_points': points}
 
   # Return a JSON response containing the generated receipt_id
   return jsonify({'id': receipt_id})
@@ -71,4 +88,7 @@ def get_points(receipt_id):
     return jsonify({'error': 'Receipt not found'}), 404
 
   # Return a JSON response containing the points awarded
-  return jsonify({'points': receipt['points']})
+  return jsonify({'points': receipt['total_points']})
+
+if __name__ == '__main__':
+    app.run(debug=True)

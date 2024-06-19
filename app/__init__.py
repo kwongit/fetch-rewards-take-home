@@ -90,5 +90,6 @@ def get_points(receipt_id):
   # Return a JSON response containing the points awarded
   return jsonify({'points': receipt['total_points']})
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    # Please do not set debug=True in production
+    app.run(host="0.0.0.0", port=5000, debug=True)
